@@ -1,45 +1,193 @@
-import logo from './logo.svg';
+import { useEffect, useMemo, useState } from 'react';
 import './App.css';
-import { useState, useEffect } from 'react';
+import Navbar from './components/Navbar';
+import {
+  CategoryPills,
+  Footer,
+  HeroSection,
+  HorizontalScroller,
+  NewsGrid,
+  RecommendationBanner,
+  SectionHeader
+} from './components/StoreSections';
+import {
+  categories,
+  featuredGames,
+  gameCards,
+  heroSlides,
+  navLinks,
+  newsItems,
+  recommendations
+} from './data/storeData';
+
+const API_URL =
+  process.env.REACT_APP_API_URL || 'https://localhost:7219/api/Game/get-all-games';
+
+const normalizeGame = (game, index) => ({
+  title: game.title || game.name || game.gameTitle || `Game ${index + 1}`,
+  price:
+    typeof game.price === 'number'
+      ? `$${game.price.toFixed(2)}`
+      : game.price || game.cost || game.finalPrice || '$19.99',
+  genre: game.genre || game.category || game.tag || 'Featured',
+  image:
+    game.image ||
+    game.imageUrl ||
+    game.headerImage ||
+    game.thumbnail ||
+    gameCards[index % gameCards.length].image
+});
 
 function App() {
-  const [games, setGames] = useState(null);
-  const [error, setError] = useState(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [backendGames, setBackendGames] = useState([]);
 
   useEffect(() => {
-    fetch('https://localhost:7219/api/Game/get-all-games')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        return response.json();
-      })
-      .then(data => setGames(data))
-      .catch(error => setError(error.message));
+    const sliderTimer = window.setInterval(() => {
+      setActiveSlide((current) => (current + 1) % heroSlides.length);
+    }, 5000);
+
+    return () => window.clearInterval(sliderTimer);
   }, []);
 
+  useEffect(() => {
+    document.body.style.overflow = isMenuOpen ? 'hidden' : 'auto';
+
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [isMenuOpen]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetch(API_URL)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Failed to load local backend games');
+        }
+
+        return response.json();
+      })
+      .then((data) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const gamesArray = Array.isArray(data) ? data : data.items || data.games || [];
+        setBackendGames(gamesArray.map(normalizeGame));
+      })
+      .catch(() => {
+        if (isMounted) {
+          setBackendGames([]);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const spotlightStats = useMemo(
+    () => [
+      { label: 'Live offers', value: '120+' },
+      { label: 'Community picks', value: '48K' },
+      { label: 'New this week', value: '36' }
+    ],
+    []
+  );
+
+  const storefrontGames = backendGames.length > 0 ? backendGames : gameCards;
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-        {error && <p>Error: {error}</p>}
-        {games ? (
-          <pre>{JSON.stringify(games, null, 2)}</pre>
-        ) : (
-          <p>Loading games...</p>
-        )}
-      </header>
+    <div className="store-shell">
+      <div className="store-shell__bg" />
+      <Navbar
+        navLinks={navLinks}
+        isMenuOpen={isMenuOpen}
+        onToggleMenu={() => setIsMenuOpen((open) => !open)}
+      />
+
+      <main className="store-main">
+        <HeroSection
+          slides={heroSlides}
+          activeSlide={activeSlide}
+          onSelectSlide={setActiveSlide}
+        />
+
+        <section className="stats-bar" aria-label="Store highlights">
+          {spotlightStats.map((stat) => (
+            <article key={stat.label} className="stats-bar__item">
+              <strong>{stat.value}</strong>
+              <span>{stat.label}</span>
+            </article>
+          ))}
+        </section>
+
+        <section className="section" id="featured">
+          <SectionHeader
+            eyebrow="Front Page Spotlight"
+            title="Featured Games"
+            actionLabel="See all releases"
+            actionHref="#categories"
+          />
+          <HorizontalScroller items={featuredGames} variant="featured" />
+        </section>
+
+        <section className="section" id="catalog">
+          <SectionHeader
+            eyebrow="Store Shelf"
+            title="Trending Right Now"
+            actionLabel="Browse catalog"
+            actionHref="#recommendations"
+          />
+          <div className="games-grid">
+            {storefrontGames.map((game) => (
+              <article key={game.title} className="game-card game-card--grid">
+                <div className="game-card__image" style={{ backgroundImage: `url(${game.image})` }} />
+                <div className="game-card__content">
+                  <span className="game-card__genre">{game.genre}</span>
+                  <h3>{game.title}</h3>
+                  <div className="game-card__footer">
+                    <strong>{game.price}</strong>
+                    <a className="game-card__button" href="#hero">
+                      View Game
+                    </a>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="section" id="categories">
+          <SectionHeader
+            eyebrow="Discover Faster"
+            title="Browse by Category"
+            actionLabel="Jump to recommendations"
+            actionHref="#recommendations"
+          />
+          <CategoryPills items={categories} />
+        </section>
+
+        <section className="section" id="recommendations">
+          <SectionHeader
+            eyebrow="Tailored Picks"
+            title="Recommended For You"
+            actionLabel="Open news"
+            actionHref="#news"
+          />
+          <RecommendationBanner items={recommendations} />
+        </section>
+
+        <section className="section" id="news">
+          <SectionHeader eyebrow="Platform Feed" title="News & Events" actionLabel="Back to top" />
+          <NewsGrid items={newsItems} />
+        </section>
+      </main>
+
+      <Footer />
     </div>
   );
 }
