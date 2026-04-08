@@ -1,3 +1,5 @@
+import BurgerMenu from './BurgerMenu';
+
 function Navbar({ navLinks, onToggleMenu, isMenuOpen }) {
   return (
     <>
@@ -42,24 +44,7 @@ function Navbar({ navLinks, onToggleMenu, isMenuOpen }) {
         </div>
       </header>
 
-      <aside className={`mobile-drawer ${isMenuOpen ? 'mobile-drawer--open' : ''}`}>
-        <div className="mobile-drawer__panel">
-          <div className="mobile-drawer__header">
-            <span>Browse Store</span>
-            <button type="button" onClick={onToggleMenu} aria-label="Close menu">
-              ✕
-            </button>
-          </div>
-
-          <nav className="mobile-drawer__nav" aria-label="Mobile navigation">
-            {navLinks.map((link) => (
-              <a key={link.href} href={link.href} onClick={onToggleMenu}>
-                {link.label}
-              </a>
-            ))}
-          </nav>
-        </div>
-      </aside>
+      <BurgerMenu navLinks={navLinks} isOpen={isMenuOpen} onClose={onToggleMenu} />
     </>
   );
 }

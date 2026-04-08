@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import './App.css';
 import Navbar from './components/Navbar';
-import {
-  CategoryPills,
-  Footer,
-  HeroSection,
-  HorizontalScroller,
-  NewsGrid,
-  RecommendationBanner,
-  SectionHeader
-} from './components/StoreSections';
+import CategoryPills from './components/CategoryPills';
+import Footer from './components/Footer';
+import GameCard from './components/GameCard';
+import HeroSection from './components/HeroSection';
+import HorizontalScroller from './components/HorizontalScroller';
+import NewsGrid from './components/NewsGrid';
+import RecommendationBanner from './components/RecommendationBanner';
+import SectionHeader from './components/SectionHeader';
 import {
   categories,
   featuredGames,
@@ -144,19 +143,7 @@ function App() {
           />
           <div className="games-grid">
             {storefrontGames.map((game) => (
-              <article key={game.title} className="game-card game-card--grid">
-                <div className="game-card__image" style={{ backgroundImage: `url(${game.image})` }} />
-                <div className="game-card__content">
-                  <span className="game-card__genre">{game.genre}</span>
-                  <h3>{game.title}</h3>
-                  <div className="game-card__footer">
-                    <strong>{game.price}</strong>
-                    <a className="game-card__button" href="#hero">
-                      View Game
-                    </a>
-                  </div>
-                </div>
-              </article>
+              <GameCard key={game.title} game={game} />
             ))}
           </div>
         </section>
