@@ -5,18 +5,14 @@ import CategoryPills from './components/CategoryPills';
 import Footer from './components/Footer';
 import GameCard from './components/GameCard';
 import HeroSection from './components/HeroSection';
-import HorizontalScroller from './components/HorizontalScroller';
 import NewsGrid from './components/NewsGrid';
-import RecommendationBanner from './components/RecommendationBanner';
 import SectionHeader from './components/SectionHeader';
 import {
   categories,
-  featuredGames,
   gameCards,
   heroSlides,
   navLinks,
-  newsItems,
-  recommendations
+  newsItems
 } from './data/storeData';
 
 const API_URL =
@@ -41,6 +37,7 @@ function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
   const [backendGames, setBackendGames] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const sliderTimer = window.setInterval(() => {
@@ -60,6 +57,7 @@ function App() {
 
   useEffect(() => {
     let isMounted = true;
+    setLoading(true);
 
     fetch(API_URL)
       .then((response) => {
@@ -80,6 +78,11 @@ function App() {
       .catch(() => {
         if (isMounted) {
           setBackendGames([]);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false);
         }
       });
 
@@ -124,22 +127,10 @@ function App() {
           ))}
         </section>
 
-        <section className="section" id="featured">
-          <SectionHeader
-            eyebrow="Front Page Spotlight"
-            title="Featured Games"
-            actionLabel="See all releases"
-            actionHref="#categories"
-          />
-          <HorizontalScroller items={featuredGames} variant="featured" />
-        </section>
-
         <section className="section" id="catalog">
           <SectionHeader
             eyebrow="Store Shelf"
-            title="Trending Right Now"
-            actionLabel="Browse catalog"
-            actionHref="#recommendations"
+            title={loading ? 'Loading...' : 'Trending Right Now'}
           />
           <div className="games-grid">
             {storefrontGames.map((game) => (
@@ -152,24 +143,12 @@ function App() {
           <SectionHeader
             eyebrow="Discover Faster"
             title="Browse by Category"
-            actionLabel="Jump to recommendations"
-            actionHref="#recommendations"
           />
           <CategoryPills items={categories} />
         </section>
 
-        <section className="section" id="recommendations">
-          <SectionHeader
-            eyebrow="Tailored Picks"
-            title="Recommended For You"
-            actionLabel="Open news"
-            actionHref="#news"
-          />
-          <RecommendationBanner items={recommendations} />
-        </section>
-
         <section className="section" id="news">
-          <SectionHeader eyebrow="Platform Feed" title="News & Events" actionLabel="Back to top" />
+          <SectionHeader eyebrow="Platform Feed" title="News & Events" />
           <NewsGrid items={newsItems} />
         </section>
       </main>

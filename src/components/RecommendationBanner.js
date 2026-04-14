@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 function RecommendationBanner({ items }) {
   return (
     <div className="recommendation-banner">
@@ -13,7 +15,7 @@ function RecommendationBanner({ items }) {
             <p>{item.subtitle}</p>
             <div className="recommendation-banner__footer">
               <strong>{item.price}</strong>
-              <a href="#news">Open Details</a>
+              <Link to="/library">Open Details</Link>
             </div>
           </div>
         </article>

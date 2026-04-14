@@ -1,4 +1,6 @@
-function SectionHeader({ title, eyebrow, actionLabel, actionHref = '#hero' }) {
+import { Link } from 'react-router-dom';
+
+function SectionHeader({ title, eyebrow, actionLabel, actionHref = '/' }) {
   return (
     <div className="section__header">
       <div>
@@ -7,9 +9,9 @@ function SectionHeader({ title, eyebrow, actionLabel, actionHref = '#hero' }) {
       </div>
 
       {actionLabel && (
-        <a className="section__action" href={actionHref}>
+        <Link className="section__action" to={actionHref}>
           {actionLabel}
-        </a>
+        </Link>
       )}
     </div>
   );

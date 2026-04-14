@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 function NewsGrid({ items }) {
   return (
     <div className="news-grid">
@@ -6,7 +8,7 @@ function NewsGrid({ items }) {
           <span className="news-card__label">Update</span>
           <h3>{item.title}</h3>
           <p>{item.text}</p>
-          <a href="#hero">Read More</a>
+          <Link to="/news">Read More</Link>
         </article>
       ))}
     </div>
