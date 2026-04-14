@@ -91,15 +91,6 @@ function App() {
     };
   }, []);
 
-  const spotlightStats = useMemo(
-    () => [
-      { label: 'Live offers', value: '120+' },
-      { label: 'Community picks', value: '48K' },
-      { label: 'New this week', value: '36' }
-    ],
-    []
-  );
-
   const storefrontGames = backendGames.length > 0 ? backendGames : gameCards;
 
   return (
@@ -117,15 +108,6 @@ function App() {
           activeSlide={activeSlide}
           onSelectSlide={setActiveSlide}
         />
-
-        <section className="stats-bar" aria-label="Store highlights">
-          {spotlightStats.map((stat) => (
-            <article key={stat.label} className="stats-bar__item">
-              <strong>{stat.value}</strong>
-              <span>{stat.label}</span>
-            </article>
-          ))}
-        </section>
 
         <section className="section" id="catalog">
           <SectionHeader

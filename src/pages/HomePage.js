@@ -99,22 +99,6 @@ function HomePage() {
           </button>
         </section>
 
-        {/* Stats Bar */}
-        <section className="stats-bar" aria-label="Store highlights">
-          <article className="stats-bar__item">
-            <strong>120+</strong>
-            <span>Live offers</span>
-          </article>
-          <article className="stats-bar__item">
-            <strong>48K</strong>
-            <span>Community picks</span>
-          </article>
-          <article className="stats-bar__item">
-            <strong>36</strong>
-            <span>New this week</span>
-          </article>
-        </section>
-
         {/* News Section */}
         <AnimatedSection className="section" delay={0}>
           <SectionHeader eyebrow="Platform Feed" title="Latest News & Updates" />
