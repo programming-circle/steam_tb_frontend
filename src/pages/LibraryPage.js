@@ -7,25 +7,29 @@ import GameCard from '../components/GameCard';
 import SectionHeader from '../components/SectionHeader';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { gameCards, navLinks } from '../data/storeData';
+import { navLinks } from '../data/storeData';
 import '../App.css';
 
 const API_URL =
-  process.env.REACT_APP_API_URL || 'https://localhost:7219/api/Game/get-all-games';
+  process.env.REACT_APP_API_URL || '/api/Game/get-all-games';
 
 const normalizeGame = (game, index) => ({
+  id: game.id || game.gameId || index,
   title: game.title || game.name || game.gameTitle || `Game ${index + 1}`,
+  slug: game.slug || (game.title || game.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
   price:
     typeof game.price === 'number'
       ? `$${game.price.toFixed(2)}`
-      : game.price || game.cost || game.finalPrice || '$19.99',
-  genre: game.genre || game.category || game.tag || 'Featured',
+      : game.price || game.cost || game.finalPrice || '$0.00',
+  genre: game.genre || game.category || game.tag || 'Game',
+  description: game.description || game.about || '',
   image:
     game.image ||
     game.imageUrl ||
     game.headerImage ||
     game.thumbnail ||
-    gameCards[index % gameCards.length].image
+    game.coverImage ||
+    ''
 });
 
 function LibraryPage() {
@@ -56,17 +60,18 @@ function LibraryPage() {
 
     fetch(API_URL)
       .then((response) => {
-        if (!response.ok) throw new Error('Failed to load library games');
+        if (!response.ok) throw new Error(`API ${response.status}`);
         return response.json();
       })
       .then((data) => {
         if (!isMounted) return;
-        const gamesArray = Array.isArray(data) ? data : data.items || data.games || [];
+        const gamesArray = Array.isArray(data) ? data : data.items || data.games || data.data || [];
         setLibraryGames(gamesArray.map(normalizeGame));
       })
-      .catch(() => {
+      .catch((err) => {
         if (isMounted) {
-          setLibraryGames(gameCards.map(normalizeGame));
+          console.error('Failed to load library:', err);
+          setLibraryGames([]);
         }
       })
       .finally(() => {

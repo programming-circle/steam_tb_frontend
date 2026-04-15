@@ -5,11 +5,11 @@ import Footer from '../components/Footer';
 import AnimatedSection from '../components/AnimatedSection';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
-import { navLinks, gameCards } from '../data/storeData';
+import { navLinks } from '../data/storeData';
 import '../App.css';
 
 const API_URL =
-  process.env.REACT_APP_API_URL || 'https://localhost:7219/api/Game/get-all-games';
+  process.env.REACT_APP_API_URL || '/api/Game/get-all-games';
 
 const makeSlug = (title) =>
   title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -17,32 +17,31 @@ const makeSlug = (title) =>
 const normalizeGame = (game, index) => {
   const title = game.title || game.name || game.gameTitle || `Game ${index + 1}`;
   return {
+    id: game.id || game.gameId || index,
     title,
-    slug: makeSlug(title),
+    slug: game.slug || makeSlug(title),
     price:
       typeof game.price === 'number'
         ? `$${game.price.toFixed(2)}`
-        : game.price || game.cost || game.finalPrice || '$19.99',
-    genre: game.genre || game.category || game.tag || 'Featured',
+        : game.price || game.cost || game.finalPrice || '$0.00',
+    genre: game.genre || game.category || game.tag || 'Game',
     description:
       game.description ||
       game.about ||
       'An immersive gaming experience with stunning visuals, engaging gameplay, and a vibrant community.',
-    developer: game.developer || 'NovaPlay Studios',
-    publisher: game.publisher || 'NovaPlay Interactive',
-    releaseDate: game.releaseDate || '2026',
-    tags: game.tags || ['Action', 'Adventure', 'Multiplayer'],
+    developer: game.developer || '',
+    publisher: game.publisher || '',
+    releaseDate: game.releaseDate || '',
+    tags: game.tags || [],
     image:
       game.image ||
       game.imageUrl ||
       game.headerImage ||
       game.thumbnail ||
-      gameCards[index % gameCards.length].image
+      game.coverImage ||
+      ''
   };
 };
-
-// Pre-compute local games once
-const LOCAL_GAMES = gameCards.map(normalizeGame);
 
 function GameDetailPage() {
   const { title: slug } = useParams();
@@ -59,27 +58,28 @@ function GameDetailPage() {
 
   useEffect(() => {
     let isMounted = true;
+    setGame(null);
 
-    // First try local games immediately
-    const localFound = LOCAL_GAMES.find((g) => g.slug === slug);
-    if (localFound) {
-      setGame(localFound);
-    }
-
-    // Then try to fetch from backend
-    fetch(API_URL, { signal: AbortSignal.timeout(4000) })
+    // Fetch from backend
+    fetch(API_URL)
       .then((res) => {
-        if (!res.ok) throw new Error('API unavailable');
+        if (!res.ok) throw new Error(`API ${res.status}`);
         return res.json();
       })
       .then((data) => {
         if (!isMounted) return;
-        const gamesArray = Array.isArray(data) ? data : data.items || data.games || [];
+        const gamesArray = Array.isArray(data) ? data : data.items || data.games || data.data || [];
         const allGames = gamesArray.map(normalizeGame);
-        const found = allGames.find((g) => g.slug === slug);
-        if (found) setGame(found);
+        const found = allGames.find((g) => g.slug === slug || g.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-') === slug);
+        if (found) {
+          setGame(found);
+        }
       })
-      .catch(() => {});
+      .catch((err) => {
+        if (isMounted) {
+          console.error('Failed to load game details:', err);
+        }
+      });
 
     return () => { isMounted = false; };
   }, [slug]);

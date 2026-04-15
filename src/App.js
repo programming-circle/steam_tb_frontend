@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import './App.css';
 import Navbar from './components/Navbar';
 import CategoryPills from './components/CategoryPills';
@@ -9,7 +9,6 @@ import NewsGrid from './components/NewsGrid';
 import SectionHeader from './components/SectionHeader';
 import {
   categories,
-  gameCards,
   heroSlides,
   navLinks,
   newsItems
@@ -19,25 +18,33 @@ const API_URL =
   process.env.REACT_APP_API_URL || 'https://localhost:7219/api/Game/get-all-games';
 
 const normalizeGame = (game, index) => ({
+  id: game.id || game.gameId || index,
   title: game.title || game.name || game.gameTitle || `Game ${index + 1}`,
+  slug: game.slug || (game.title || game.name || game.gameTitle || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
   price:
     typeof game.price === 'number'
       ? `$${game.price.toFixed(2)}`
-      : game.price || game.cost || game.finalPrice || '$19.99',
-  genre: game.genre || game.category || game.tag || 'Featured',
+      : game.price || game.cost || game.finalPrice || '$0.00',
+  genre: game.genre || game.category || game.tag || 'Game',
   image:
     game.image ||
     game.imageUrl ||
     game.headerImage ||
     game.thumbnail ||
-    gameCards[index % gameCards.length].image
+    game.coverImage ||
+    '',
+  description: game.description || game.summary || game.shortDescription || '',
+  developer: game.developer || game.developerName || game.creator || '',
+  publisher: game.publisher || game.publisherName || '',
+  tags: game.tags || game.tagsList || game.labels || []
 });
 
 function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
-  const [backendGames, setBackendGames] = useState([]);
+  const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const sliderTimer = window.setInterval(() => {
@@ -58,26 +65,33 @@ function App() {
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
+    setError(null);
 
     fetch(API_URL)
       .then((response) => {
         if (!response.ok) {
-          throw new Error('Failed to load local backend games');
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-
         return response.json();
       })
       .then((data) => {
-        if (!isMounted) {
-          return;
-        }
+        if (!isMounted) return;
 
-        const gamesArray = Array.isArray(data) ? data : data.items || data.games || [];
-        setBackendGames(gamesArray.map(normalizeGame));
+        console.log('API response:', data);
+        const gamesArray = Array.isArray(data) ? data : data.items || data.games || data.data || [];
+
+        if (gamesArray.length === 0) {
+          setError('API вернул пустой список игр');
+          setGames([]);
+        } else {
+          setGames(gamesArray.map(normalizeGame));
+        }
       })
-      .catch(() => {
+      .catch((err) => {
         if (isMounted) {
-          setBackendGames([]);
+          console.error('Failed to load games:', err);
+          setError(`Не удалось загрузить игры: ${err.message}`);
+          setGames([]);
         }
       })
       .finally(() => {
@@ -90,8 +104,6 @@ function App() {
       isMounted = false;
     };
   }, []);
-
-  const storefrontGames = backendGames.length > 0 ? backendGames : gameCards;
 
   return (
     <div className="store-shell">
@@ -112,13 +124,29 @@ function App() {
         <section className="section" id="catalog">
           <SectionHeader
             eyebrow="Store Shelf"
-            title={loading ? 'Loading...' : 'Trending Right Now'}
+            title={loading ? 'Загрузка...' : 'Trending Right Now'}
           />
-          <div className="games-grid">
-            {storefrontGames.map((game) => (
-              <GameCard key={game.title} game={game} />
-            ))}
-          </div>
+
+          {loading && <p className="loading-text">Загрузка игр из каталога...</p>}
+
+          {error && !loading && (
+            <div className="error-banner">
+              <p>{error}</p>
+              <p className="error-hint">Убедитесь, что бэкенд запущен и CORS настроен правильно</p>
+            </div>
+          )}
+
+          {!loading && games.length > 0 && (
+            <div className="games-grid">
+              {games.map((game) => (
+                <GameCard key={game.id || game.title} game={game} />
+              ))}
+            </div>
+          )}
+
+          {!loading && games.length === 0 && !error && (
+            <p className="empty-message">Каталог пуст</p>
+          )}
         </section>
 
         <section className="section" id="categories">

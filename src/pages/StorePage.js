@@ -5,36 +5,37 @@ import AnimatedSection from '../components/AnimatedSection';
 import Footer from '../components/Footer';
 import GameCard from '../components/GameCard';
 import SectionHeader from '../components/SectionHeader';
-import { gameCards, navLinks } from '../data/storeData';
+import { navLinks } from '../data/storeData';
 import '../App.css';
 
 const API_URL =
-  process.env.REACT_APP_API_URL || 'https://localhost:7219/api/Game/get-all-games';
+  process.env.REACT_APP_API_URL || '/api/Game/get-all-games';
 
 const normalizeGame = (game, index) => {
   const title = game.title || game.name || game.gameTitle || `Game ${index + 1}`;
   return {
+    id: game.id || game.gameId || index,
     title,
-    slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+    slug: game.slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
     price:
       typeof game.price === 'number'
         ? `$${game.price.toFixed(2)}`
-        : game.price || game.cost || game.finalPrice || '$19.99',
-    genre: game.genre || game.category || game.tag || 'Featured',
+        : game.price || game.cost || game.finalPrice || '$0.00',
+    genre: game.genre || game.category || game.tag || 'Game',
     description: game.description || game.about || 'An immersive gaming experience.',
-    developer: game.developer || 'NovaPlay Studios',
-    publisher: game.publisher || 'NovaPlay Interactive',
-    releaseDate: game.releaseDate || '2026',
-    tags: game.tags || ['Action', 'Adventure'],
+    developer: game.developer || '',
+    publisher: game.publisher || '',
+    releaseDate: game.releaseDate || '',
+    tags: game.tags || [],
     image:
-      game.image || game.imageUrl || game.headerImage || game.thumbnail ||
-      gameCards[index % gameCards.length].image
+      game.image || game.imageUrl || game.headerImage || game.thumbnail || game.coverImage || ''
   };
 };
 
 function StorePage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [allGames, setAllGames] = useState(gameCards.map(normalizeGame));
+  const [allGames, setAllGames] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
   const [activeGenre, setActiveGenre] = useState('All');
@@ -49,23 +50,30 @@ function StorePage() {
     if (q) setSearchQuery(q);
   }, [searchParams]);
 
-  // Fetch from backend in background, don't block rendering
+  // Fetch from backend
   useEffect(() => {
     let isMounted = true;
+    setLoading(true);
 
-    fetch(API_URL, { signal: AbortSignal.timeout(5000) })
+    fetch(API_URL)
       .then((res) => {
-        if (!res.ok) throw new Error('API unavailable');
+        if (!res.ok) throw new Error(`API ${res.status}`);
         return res.json();
       })
       .then((data) => {
         if (!isMounted) return;
-        const gamesArray = Array.isArray(data) ? data : data.items || data.games || [];
-        if (gamesArray.length > 0) {
-          setAllGames(gamesArray.map(normalizeGame));
+        const gamesArray = Array.isArray(data) ? data : data.items || data.games || data.data || [];
+        setAllGames(gamesArray.map(normalizeGame));
+      })
+      .catch((err) => {
+        if (isMounted) {
+          console.error('Failed to load games:', err);
+          setAllGames([]);
         }
       })
-      .catch(() => {});
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
 
     return () => { isMounted = false; };
   }, []);
@@ -131,7 +139,9 @@ function StorePage() {
             </div>
           </div>
 
-          <p className="store-count">{filteredGames.length} game{filteredGames.length !== 1 ? 's' : ''} found</p>
+          <p className="store-count">
+            {loading ? 'Loading...' : `${filteredGames.length} game${filteredGames.length !== 1 ? 's' : ''} found`}
+          </p>
           <div className="games-grid">
             {filteredGames.length > 0 ? (
               filteredGames.map((game) => (
